@@ -1,69 +1,175 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useEffect, useState } from "react";
+import type { Item } from "@/lib/db/schema";
+import { Plus, Trash2, Loader2 } from "lucide-react";
+
+export default function ItemsPage() {
+  const [items, setItems] = useState<Item[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState<string>("");
+
+  // Form state for creating a new item
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [priority, setPriority] = useState<Item["priority"]>("medium");
+
+  // 1. READ (GET /api/items)
+  useEffect(() => {
+    async function fetchItems() {
+      setLoading(true);
+      const url = statusFilter ? `/api/items?status=${statusFilter}` : "/api/items";
+      const res = await fetch(url);
+      const data = await res.json();
+      setItems(data);
+      setLoading(false);
+    }
+    fetchItems();
+  }, [statusFilter]);
+
+  // 2. CREATE (POST /api/items)
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!title.trim()) return;
+
+    const res = await fetch("/api/items", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title, description, priority }),
+    });
+
+    if (res.ok) {
+      const newItem: Item = await res.json();
+      setItems((prev) => [newItem, ...prev]); // Add to top of list
+      setTitle("");
+      setDescription("");
+      setPriority("medium");
+    }
+  }
+
+  // 3. UPDATE (PATCH /api/items/:id)
+  async function handleStatusChange(id: string, status: Item["status"]) {
+    const res = await fetch(`/api/items/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+
+    if (res.ok) {
+      const updated: Item = await res.json();
+      setItems((prev) => prev.map((item) => (item.id === id ? updated : item)));
+    }
+  }
+
+  // 4. DELETE (DELETE /api/items/:id)
+  async function handleDelete(id: string) {
+    const res = await fetch(`/api/items/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      setItems((prev) => prev.filter((item) => item.id !== id));
+    }
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <main className="mx-auto max-w-3xl p-6 space-y-6">
+      <h1 className="text-2xl font-bold">Task Tracker (Drizzle + Postgres)</h1>
+
+      {/* CREATE FORM */}
+      <form onSubmit={handleCreate} className="space-y-3 rounded-lg border p-4">
+        <div className="flex gap-2">
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Task title..."
+            className="flex-1 rounded border px-3 py-2 text-sm bg-transparent"
+            required
+          />
+          <select
+            value={priority}
+            onChange={(e) => setPriority(e.target.value as Item["priority"])}
+            className="rounded border px-3 py-2 text-sm bg-transparent"
+          >
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+          </select>
+          <button
+            type="submit"
+            className="flex items-center gap-1 rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          >
+            <Plus className="h-4 w-4" /> Add
+          </button>
+        </div>
+        <input
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Optional description..."
+          className="w-full rounded border px-3 py-2 text-sm bg-transparent"
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      </form>
+
+      {/* FILTER BUTTONS */}
+      <div className="flex gap-2 text-sm">
+        {["", "pending", "in_progress", "completed"].map((s) => (
+          <button
+            key={s}
+            onClick={() => setStatusFilter(s)}
+            className={`rounded-full border px-3 py-1 ${
+              statusFilter === s ? "bg-zinc-900 text-white dark:bg-white dark:text-black" : ""
+            }`}
           >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            {s === "" ? "All" : s.replace("_", " ")}
+          </button>
+        ))}
+      </div>
+
+      {/* ITEMS LIST */}
+      {loading ? (
+        <div className="flex items-center gap-2 text-sm text-zinc-500">
+          <Loader2 className="h-4 w-4 animate-spin" /> Loading items...
         </div>
-      </main>
-    </div>
+      ) : (
+        <ul className="space-y-3">
+          {items.map((item) => (
+            <li
+              key={item.id}
+              className="flex items-center justify-between rounded-lg border p-4"
+            >
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{item.title}</span>
+                  <span className="rounded bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 text-xs">
+                    {item.priority}
+                  </span>
+                </div>
+                {item.description && (
+                  <p className="text-sm text-zinc-500">{item.description}</p>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <select
+                  value={item.status}
+                  onChange={(e) =>
+                    handleStatusChange(item.id, e.target.value as Item["status"])
+                  }
+                  className="rounded border px-2 py-1 text-xs bg-transparent"
+                >
+                  <option value="pending">Pending</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="completed">Completed</option>
+                </select>
+
+                <button
+                  onClick={() => handleDelete(item.id)}
+                  className="rounded p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-950"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </main>
   );
 }
