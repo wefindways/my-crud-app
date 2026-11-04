@@ -22,11 +22,11 @@ interface RouteContext {
 }
 
 // PATCH /api/items/:id
-export async function PATCH(req: Request, { params }: RouteContext) {
+export async function PATCH(request: Request, { params }: RouteContext) {
   try {
     // 1. Input
     const { id } = await params;
-    const body = await req.json();
+    const body = await request.json();
 
     // 2. Validate (both URL UUID and JSON body)
     const validId = idSchema.parse(id);
