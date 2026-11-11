@@ -6,21 +6,33 @@ import { Plus, Trash2, Loader2 } from "lucide-react";
 
 export default function ItemsPage() {
   const [items, setItems] = useState<Item[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
   const [statusFilter, setStatusFilter] = useState<string>("");
 
   // Form state for creating a new item
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
+  const [title, setTitle] = useState<string>("");
+  const [description, setDescription] = useState<string>("");
   const [priority, setPriority] = useState<Item["priority"]>("medium");
+
+  const FILTER_TABS = [
+    { label: "All", value: "" },
+    { label: "Pending", value: "pending" },
+    { label: "In Progress", value: "in_progress" },
+    { label: "Completed", value: "completed" },
+  ];
 
   // 1. READ (GET /api/items)
   useEffect(() => {
     async function fetchItems() {
       setLoading(true);
-      const url = statusFilter ? `/api/items?status=${statusFilter}` : "/api/items";
+
+      const url = statusFilter
+        ? `/api/items?status=${statusFilter}`
+        : "/api/items";
+
       const res = await fetch(url);
       const data = await res.json();
+
       setItems(data);
       setLoading(false);
     }
@@ -109,15 +121,15 @@ export default function ItemsPage() {
 
       {/* FILTER BUTTONS */}
       <div className="flex gap-2 text-sm">
-        {["", "pending", "in_progress", "completed"].map((s) => (
+        {FILTER_TABS.map((tab) => (
           <button
-            key={s}
-            onClick={() => setStatusFilter(s)}
+            key={tab.label}
+            onClick={() => setStatusFilter(tab.value)}
             className={`rounded-full border px-3 py-1 ${
-              statusFilter === s ? "bg-zinc-900 text-white dark:bg-white dark:text-black" : ""
+              statusFilter === tab.value ? "bg-zinc-900 text-white" : ""
             }`}
           >
-            {s === "" ? "All" : s.replace("_", " ")}
+            {tab.label}
           </button>
         ))}
       </div>
@@ -150,7 +162,10 @@ export default function ItemsPage() {
                 <select
                   value={item.status}
                   onChange={(e) =>
-                    handleStatusChange(item.id, e.target.value as Item["status"])
+                    handleStatusChange(
+                      item.id,
+                      e.target.value as Item["status"],
+                    )
                   }
                   className="rounded border px-2 py-1 text-xs bg-transparent"
                 >
