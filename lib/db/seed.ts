@@ -14,36 +14,40 @@ const db = drizzle(pool);
 async function seed() {
   console.log("Seeding database...");
 
-  const existingItems = await db.select().from(items);
-  if (existingItems.length === 0) {
-    await db.insert(items).values([
-      {
-        title: "Set up PostgreSQL & Drizzle ORM",
-        description: "Configure local database pool, schema, and Drizzle Studio.",
-        status: "completed",
-        priority: "high",
-      },
-      {
-        title: "Build GitHub Actions CI pipeline",
-        description: "Automate TypeScript, ESLint, Drizzle schema push, and Next.js build checks.",
-        status: "completed",
-        priority: "high",
-      },
-      {
-        title: "Create CRUD API Route Handlers",
-        description: "Implement GET, POST, PATCH, and DELETE endpoints with Zod validation.",
-        status: "in_progress",
-        priority: "high",
-      },
-      {
-        title: "Migrate Database to Supabase",
-        description: "Switch DATABASE_URL to Supabase cloud Postgres for production deployment.",
-        status: "pending",
-        priority: "medium",
-      },
-    ]);
-    console.log("Seeded items table.");
-  }
+  await db.delete(items);
+
+  await db.insert(items).values([
+    {
+      title: "Clean kitchen and wash dishes",
+      description: "Wipe down counters and take out the trash.",
+      status: "completed",
+      priority: "medium",
+    },
+    {
+      title: "Submit laboratory exercises on friday",
+      description: "Finalize before the deadline",
+      status: "in_progress",
+      priority: "high",
+    },
+    {
+      title: "Review Operating Systems Chapter 4",
+      description: "Study synchronization notes and practice semaphores.",
+      status: "pending",
+      priority: "high",
+    },
+    {
+      title: "Weekend grocery run",
+      description: "Restock oats, milk, eggs, and coffee beans.",
+      status: "pending",
+      priority: "low",
+    },
+    {
+      title: "Fold and store laundry",
+      description: "Sort shirts, bedsheets, and towels.",
+      status: "completed",
+      priority: "low",
+    },
+  ]);
 
   await pool.end();
   console.log("Seeding complete!");
