@@ -21,31 +21,26 @@ async function seed() {
       title: "Clean kitchen and wash dishes",
       description: "Wipe down counters and take out the trash.",
       status: "completed",
-      priority: "medium",
     },
     {
       title: "Submit laboratory exercises on friday",
       description: "Finalize before the deadline",
       status: "in_progress",
-      priority: "high",
     },
     {
       title: "Review Operating Systems Chapter 4",
       description: "Study synchronization notes and practice semaphores.",
       status: "pending",
-      priority: "high",
     },
     {
       title: "Weekend grocery run",
       description: "Restock oats, milk, eggs, and coffee beans.",
       status: "pending",
-      priority: "low",
     },
     {
       title: "Fold and store laundry",
       description: "Sort shirts, bedsheets, and towels.",
       status: "completed",
-      priority: "low",
     },
   ]);
 
