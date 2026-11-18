@@ -11,7 +11,6 @@ const updateItemSchema = z
     title: z.string().trim().min(1).max(120).optional(),
     description: z.string().trim().optional(),
     status: z.enum(["pending", "in_progress", "completed"]).optional(),
-    priority: z.enum(["low", "medium", "high"]).optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {
     message: "At least one field must be provided for update",

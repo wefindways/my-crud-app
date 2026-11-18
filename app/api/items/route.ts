@@ -11,7 +11,6 @@ const createItemSchema = z.object({
   title: z.string().trim().min(1, "Title is required").max(120),
   description: z.string().trim().optional(),
   status: z.enum(["pending", "in_progress", "completed"]).default("pending"),
-  priority: z.enum(["low", "medium", "high"]).default("medium"),
 });
 
 // GET /api/items?status=pending
