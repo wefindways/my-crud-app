@@ -7,36 +7,48 @@ import ItemForm from "./components/ItemForm";
 import ItemCard from "./components/ItemCard";
 import FilterTabs from "./components/FilterTabs";
 import ErrorBanner from "./components/ErrorBanner";
+import Pagination from "./components/Pagination";
 
 export default function ItemsPage() {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [statusFilter, setStatusFilter] = useState<string>("");
+  const [page, setPage] = useState<number>(1);
+  const [total, setTotal] = useState<number>(0);
+  const [totalPages, setTotalPages] = useState<number>(1);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // 1. READ (GET /api/items?status=...)
+  // 1. READ (GET /api/items?status=...&page=...)
   const fetchItems = useCallback(async () => {
     setLoading(true);
     setErrorMessage(null);
 
     try {
-      const url = statusFilter
-        ? `/api/items?status=${statusFilter}`
-        : "/api/items";
+      const params = new URLSearchParams();
+      if (statusFilter) params.set("status", statusFilter);
+      params.set("page", String(page));
 
-      const res = await fetch(url);
+      const res = await fetch(`/api/items?${params.toString()}`);
       if (!res.ok) {
         throw new Error("Failed to load tasks. Please try again.");
       }
 
-      const data: Item[] = await res.json();
-      setItems(data);
+      const data: { items: Item[]; total: number; totalPages: number } = await res.json();
+
+      // This page became empty (e.g. we deleted its last task) → go back one page.
+      if (data.items.length === 0 && page > 1) {
+        setPage(page - 1);
+        return;
+      }
+
+      setItems(data.items);
+      setTotal(data.total);
+      setTotalPages(data.totalPages);
     } catch {
       setErrorMessage("Unable to load tasks. Please check your connection.");
-    } finally {
-      setLoading(false);
     }
-  }, [statusFilter]);
+    setLoading(false);
+  }, [statusFilter, page]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -56,9 +68,11 @@ export default function ItemsPage() {
       });
 
       if (res.ok) {
-        const newItem: Item = await res.json();
-        setItems((prev) => [newItem, ...prev]);
         setErrorMessage(null);
+        // Newest tasks show on page 1. Changing URL fetches automatically;
+        // if we're already on page 1, fetch manually.
+        if (page === 1) await fetchItems();
+        else setPage(1);
         return { success: true };
       }
 
@@ -89,8 +103,7 @@ export default function ItemsPage() {
         throw new Error();
       }
 
-      const updated: Item = await res.json();
-      setItems((prev) => prev.map((item) => (item.id === id ? updated : item)));
+      await fetchItems();
     } catch {
       setErrorMessage("Failed to update task. Please try again.");
     }
@@ -103,7 +116,7 @@ export default function ItemsPage() {
       if (!res.ok) {
         throw new Error();
       }
-      setItems((prev) => prev.filter((item) => item.id !== id));
+      await fetchItems();
     } catch {
       setErrorMessage("Failed to delete task. Please try again.");
     }
@@ -112,7 +125,7 @@ export default function ItemsPage() {
   return (
     <main className="mx-auto max-w-3xl p-6 space-y-6">
       <h1 className="text-2xl font-bold text-center">
-        Task Tracker (Drizzle + Postgres)
+        Task Tracker
       </h1>
 
       {/* GLOBAL ERROR BANNER */}
@@ -130,7 +143,10 @@ export default function ItemsPage() {
       {/* FILTER TABS */}
       <FilterTabs
         activeFilter={statusFilter}
-        onSelectFilter={setStatusFilter}
+        onSelectFilter={(filter) => {
+          setStatusFilter(filter);
+          setPage(1); // Reset to page 1 when switching filter tabs
+        }}
       />
 
       {/* ITEMS LIST */}
@@ -154,6 +170,14 @@ export default function ItemsPage() {
           ))}
         </ul>
       )}
+
+      {/* PAGINATION */}
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        total={total}
+        onPageChange={setPage}
+      />
     </main>
   );
 }
