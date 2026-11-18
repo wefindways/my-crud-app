@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { items } from "@/lib/db/schema";
-import { desc, eq } from "drizzle-orm";
+import { count, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 
 const ALLOWABLE_STATUS = ["pending", "in_progress", "completed"] as const;
 type Status = (typeof ALLOWABLE_STATUS)[number];
+const PAGE_SIZE = 5;
 
 const createItemSchema = z.object({
   title: z.string().trim().min(1, "Title is required").max(120),
@@ -13,11 +14,12 @@ const createItemSchema = z.object({
   status: z.enum(["pending", "in_progress", "completed"]).default("pending"),
 });
 
-// GET /api/items?status=pending
+// GET /api/items?status=pending&page=1
 export async function GET(request: Request) {
   // 1. Input
   const { searchParams } = new URL(request.url);
   const statusParam = searchParams.get("status");
+  const page = Math.max(1, Number(searchParams.get("page")) || 1); // missing/invalid → 1
 
   // 2. Validate
   if (
@@ -30,17 +32,26 @@ export async function GET(request: Request) {
     );
   }
 
-  // 3. Query
-  const records = statusParam
-    ? await db
-        .select()
-        .from(items)
-        .where(eq(items.status, statusParam as Status))
-        .orderBy(desc(items.createdAt))
-    : await db.select().from(items).orderBy(desc(items.createdAt));
+  // Both queries use the same filter, so the count always matches the list
+  const filter = statusParam ? eq(items.status, statusParam as Status) : undefined;
+
+  // 3. Query: run both at the same time
+  const [records, countRows] = await Promise.all([
+    db
+      .select()
+      .from(items)
+      .where(filter)
+      .orderBy(desc(items.createdAt))
+      .limit(PAGE_SIZE)
+      .offset((page - 1) * PAGE_SIZE), // page 1 skips 0, page 2 skips 5...
+    db.select({ total: count() }).from(items).where(filter),
+  ]);
+
+  const total = countRows[0].total;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   // 4. Respond
-  return NextResponse.json(records, { status: 200 });
+  return NextResponse.json({ items: records, total, totalPages }, { status: 200 });
 }
 
 // POST /api/items
