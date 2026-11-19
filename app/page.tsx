@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { Suspense, useEffect, useState, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { Item } from "@/lib/db/schema";
 import { Loader2 } from "lucide-react";
 import ItemForm from "./components/ItemForm";
@@ -9,14 +10,29 @@ import FilterTabs from "./components/FilterTabs";
 import ErrorBanner from "./components/ErrorBanner";
 import Pagination from "./components/Pagination";
 
-export default function ItemsPage() {
+function ItemsPageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const statusFilter = searchParams.get("status") ?? "";
+  const page = Math.max(1, Number(searchParams.get("page")) || 1);
+
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [statusFilter, setStatusFilter] = useState<string>("");
-  const [page, setPage] = useState<number>(1);
   const [total, setTotal] = useState<number>(0);
   const [totalPages, setTotalPages] = useState<number>(1);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const updateUrl = useCallback(
+    (status: string, nextPage: number) => {
+      const params = new URLSearchParams();
+      if (status) params.set("status", status);
+      if (nextPage > 1) params.set("page", String(nextPage));
+      const query = params.toString();
+      router.push(query ? `/?${query}` : "/");
+    },
+    [router],
+  );
 
   // 1. READ (GET /api/items?status=...&page=...)
   const fetchItems = useCallback(async () => {
@@ -37,7 +53,7 @@ export default function ItemsPage() {
 
       // This page became empty (e.g. we deleted its last task) → go back one page.
       if (data.items.length === 0 && page > 1) {
-        setPage(page - 1);
+        updateUrl(statusFilter, page - 1);
         return;
       }
 
@@ -48,7 +64,7 @@ export default function ItemsPage() {
       setErrorMessage("Unable to load tasks. Please check your connection.");
     }
     setLoading(false);
-  }, [statusFilter, page]);
+  }, [statusFilter, page, updateUrl]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -69,10 +85,8 @@ export default function ItemsPage() {
 
       if (res.ok) {
         setErrorMessage(null);
-        // Newest tasks show on page 1. Changing URL fetches automatically;
-        // if we're already on page 1, fetch manually.
         if (page === 1) await fetchItems();
-        else setPage(1);
+        else updateUrl(statusFilter, 1);
         return { success: true };
       }
 
@@ -143,10 +157,7 @@ export default function ItemsPage() {
       {/* FILTER TABS */}
       <FilterTabs
         activeFilter={statusFilter}
-        onSelectFilter={(filter) => {
-          setStatusFilter(filter);
-          setPage(1); // Reset to page 1 when switching filter tabs
-        }}
+        onSelectFilter={(filter) => updateUrl(filter, 1)}
       />
 
       {/* ITEMS LIST */}
@@ -176,8 +187,22 @@ export default function ItemsPage() {
         page={page}
         totalPages={totalPages}
         total={total}
-        onPageChange={setPage}
+        onPageChange={(nextPage) => updateUrl(statusFilter, nextPage)}
       />
     </main>
+  );
+}
+
+export default function ItemsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex justify-center p-8">
+          <Loader2 className="animate-spin text-neutral-400" />
+        </div>
+      }
+    >
+      <ItemsPageContent />
+    </Suspense>
   );
 }
