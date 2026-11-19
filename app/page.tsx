@@ -138,7 +138,7 @@ function ItemsPageContent() {
   }
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-15 space-y-6">
+    <main className="mx-auto max-w-4xl px-4 py-15 space-y-6">
       {/* GLOBAL ERROR BANNER */}
       {errorMessage && (
         <ErrorBanner
@@ -148,7 +148,7 @@ function ItemsPageContent() {
         />
       )}
 
-      <div className="grid gap-8 md:grid-cols-[280px_1fr] items-start">
+      <div className="grid gap-8 md:grid-cols-[280px_minmax(0,1fr)] items-start">
         {/* LEFT COLUMN: CREATE FORM */}
         <div className="md:sticky md:top-8">
           <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 pb-2">
@@ -159,7 +159,7 @@ function ItemsPageContent() {
         </div>
 
         {/* RIGHT COLUMN: TABS, LIST & PAGINATION */}
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           <FilterTabs
             activeFilter={statusFilter}
             onSelectFilter={(filter) => updateUrl(filter, 1)}

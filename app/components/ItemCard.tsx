@@ -18,7 +18,7 @@ export default function ItemCard({
     <li className="flex items-center justify-between gap-4 py-3.5">
       <div className="min-w-0 flex-1">
         <p
-          className={`text-sm font-medium ${
+          className={`text-sm font-medium break-words ${
             isCompleted
               ? "line-through text-zinc-400 dark:text-zinc-500"
               : "text-zinc-900 dark:text-zinc-100"
@@ -27,7 +27,7 @@ export default function ItemCard({
           {item.title}
         </p>
         {item.description && (
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 break-words">
             {item.description}
           </p>
         )}
