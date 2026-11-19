@@ -16,10 +16,10 @@ export default function Pagination({
   if (total === 0) return null;
 
   return (
-    <div className="flex items-center justify-between border-t pt-4 text-sm text-neutral-600 dark:text-neutral-400">
+    <div className="flex items-center justify-between border-t border-zinc-200 pt-4 text-xs text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
       <span>
-        Page <strong className="text-neutral-900 dark:text-neutral-100">{page}</strong> of{" "}
-        <strong className="text-neutral-900 dark:text-neutral-100">{totalPages}</strong> ({total}{" "}
+        Page <strong className="font-medium text-zinc-900 dark:text-zinc-100">{page}</strong> of{" "}
+        <strong className="font-medium text-zinc-900 dark:text-zinc-100">{totalPages}</strong> ({total}{" "}
         {total === 1 ? "task" : "tasks"})
       </span>
 
@@ -27,16 +27,16 @@ export default function Pagination({
         <button
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
-          className="flex items-center gap-1 rounded border px-3 py-1.5 text-xs font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+          className="inline-flex items-center gap-1 border border-zinc-300 px-2.5 py-1 text-xs text-zinc-700 hover:bg-zinc-100 disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800 cursor-pointer disabled:cursor-not-allowed"
         >
-          <ChevronLeft className="h-4 w-4" /> Previous
+          <ChevronLeft className="h-3.5 w-3.5" /> Previous
         </button>
         <button
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages}
-          className="flex items-center gap-1 rounded border px-3 py-1.5 text-xs font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+          className="inline-flex items-center gap-1 border border-zinc-300 px-2.5 py-1 text-xs text-zinc-700 hover:bg-zinc-100 disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800 cursor-pointer disabled:cursor-not-allowed"
         >
-          Next <ChevronRight className="h-4 w-4" />
+          Next <ChevronRight className="h-3.5 w-3.5" />
         </button>
       </div>
     </div>

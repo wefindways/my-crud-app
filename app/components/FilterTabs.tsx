@@ -14,13 +14,15 @@ export default function FilterTabs({
   ];
 
   return (
-    <div className="flex gap-2 text-sm">
+    <div className="flex gap-6 border-b border-zinc-200 dark:border-zinc-800 text-sm">
       {FILTER_TABS.map((tab) => (
         <button
           key={tab.label}
           onClick={() => onSelectFilter(tab.value)}
-          className={`rounded-full border px-3 py-1 ${
-            activeFilter === tab.value ? "bg-zinc-900 text-white" : ""
+          className={`-mb-px border-b-2 pb-2.5 font-medium transition-colors cursor-pointer ${
+            activeFilter === tab.value
+              ? "border-zinc-900 text-zinc-900 dark:border-zinc-100 dark:text-zinc-100"
+              : "border-transparent text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
           }`}
         >
           {tab.label}
