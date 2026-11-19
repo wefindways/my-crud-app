@@ -6,7 +6,7 @@ import { z } from "zod";
 
 const ALLOWABLE_STATUS = ["pending", "in_progress", "completed"] as const;
 type Status = (typeof ALLOWABLE_STATUS)[number];
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 10;
 
 const createItemSchema = z.object({
   title: z.string().trim().min(1, "Title is required").max(120),
@@ -41,9 +41,9 @@ export async function GET(request: Request) {
       .select()
       .from(items)
       .where(filter)
-      .orderBy(desc(items.createdAt))
+      .orderBy(desc(items.createdAt), desc(items.id))
       .limit(PAGE_SIZE)
-      .offset((page - 1) * PAGE_SIZE), // page 1 skips 0, page 2 skips 5...
+      .offset((page - 1) * PAGE_SIZE), // page 1 skips 0, page 2 skips 10...
     db.select({ total: count() }).from(items).where(filter),
   ]);
 

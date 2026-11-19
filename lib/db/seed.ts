@@ -42,6 +42,37 @@ async function seed() {
       description: "Sort shirts, bedsheets, and towels.",
       status: "completed",
     },
+    {
+      title: "Finish database normalization worksheet",
+      description: "Cover 1NF to 3NF with the sample tables",
+      status: "completed",
+    },
+    {
+      title: "Write README for the takehome project",
+      description: "Setup steps, stack choices, and trade-offs",
+      status: "pending",
+    },
+    {
+      title: "Deploy app to Vercel",
+      description: "Connect the hosted database and test the live link",
+      status: "pending",
+    },
+    {
+      title: "Group meeting for capstone",
+      description: "Discuss the remaining modules and assign tasks",
+      status: "pending",
+    },
+    {
+      title: "Update portfolio website",
+      description: "Add the new project and refresh the screenshots",
+      status: "in_progress",
+    },
+    { title: "Pay internet bill", status: "completed" },
+    {
+      title: "Pay water bill",
+      status: "completed",
+    },
+    { title: "Clean up unused components", status: "pending" },
   ]);
 
   await pool.end();
