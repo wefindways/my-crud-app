@@ -49,7 +49,8 @@ function ItemsPageContent() {
         throw new Error("Failed to load tasks. Please try again.");
       }
 
-      const data: { items: Item[]; total: number; totalPages: number } = await res.json();
+      const data: { items: Item[]; total: number; totalPages: number } =
+        await res.json();
 
       // This page became empty (e.g. we deleted its last task) → go back one page.
       if (data.items.length === 0 && page > 1) {
@@ -137,11 +138,7 @@ function ItemsPageContent() {
   }
 
   return (
-    <main className="mx-auto max-w-3xl p-6 space-y-6">
-      <h1 className="text-2xl font-bold text-center">
-        Task Tracker
-      </h1>
-
+    <main className="mx-auto max-w-4xl px-4 py-15 space-y-6">
       {/* GLOBAL ERROR BANNER */}
       {errorMessage && (
         <ErrorBanner
@@ -151,44 +148,52 @@ function ItemsPageContent() {
         />
       )}
 
-      {/* CREATE FORM */}
-      <ItemForm onCreate={handleCreate} />
+      <div className="grid gap-8 md:grid-cols-[280px_minmax(0,1fr)] items-start">
+        {/* LEFT COLUMN: CREATE FORM */}
+        <div className="md:sticky md:top-8">
+          <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 pb-2">
+            Task Tracker
+          </h1>
 
-      {/* FILTER TABS */}
-      <FilterTabs
-        activeFilter={statusFilter}
-        onSelectFilter={(filter) => updateUrl(filter, 1)}
-      />
-
-      {/* ITEMS LIST */}
-      {loading ? (
-        <div className="flex justify-center p-8">
-          <Loader2 className="animate-spin text-neutral-400" />
+          <ItemForm onCreate={handleCreate} />
         </div>
-      ) : items.length === 0 ? (
-        <p className="text-center text-sm text-neutral-500 py-8">
-          No tasks found.
-        </p>
-      ) : (
-        <ul className="space-y-3">
-          {items.map((item) => (
-            <ItemCard
-              key={item.id}
-              item={item}
-              onStatusChange={handleStatusChange}
-              onDelete={handleDelete}
-            />
-          ))}
-        </ul>
-      )}
 
-      {/* PAGINATION */}
-      <Pagination
-        page={page}
-        totalPages={totalPages}
-        total={total}
-        onPageChange={(nextPage) => updateUrl(statusFilter, nextPage)}
-      />
+        {/* RIGHT COLUMN: TABS, LIST & PAGINATION */}
+        <div className="min-w-0 space-y-4">
+          <FilterTabs
+            activeFilter={statusFilter}
+            onSelectFilter={(filter) => updateUrl(filter, 1)}
+          />
+
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-5 w-5 animate-spin text-zinc-400" />
+            </div>
+          ) : items.length === 0 ? (
+            <p className="py-10 text-center text-sm text-zinc-500">
+              No tasks found.
+            </p>
+          ) : (
+            <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
+              {items.map((item) => (
+                <ItemCard
+                  key={item.id}
+                  item={item}
+                  onStatusChange={handleStatusChange}
+                  onDelete={handleDelete}
+                />
+              ))}
+            </ul>
+          )}
+
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            total={total}
+            onPageChange={(nextPage) => updateUrl(statusFilter, nextPage)}
+          />
+        </div>
+      </div>
     </main>
   );
 }
