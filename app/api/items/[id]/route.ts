@@ -8,7 +8,12 @@ const idSchema = z.string().uuid("Invalid Item ID format");
 
 const updateItemSchema = z
   .object({
-    title: z.string().trim().min(1).max(120).optional(),
+    title: z
+      .string()
+      .trim()
+      .min(1, "Title is required.")
+      .max(120, "Title is too long (maximum 120 characters).")
+      .optional(),
     description: z.string().trim().optional(),
     status: z.enum(["pending", "in_progress", "completed"]).optional(),
   })
