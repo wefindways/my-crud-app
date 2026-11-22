@@ -28,7 +28,7 @@ interface RouteContext {
 // PATCH /api/items/:id
 export async function PATCH(request: Request, { params }: RouteContext) {
   try {
-    // 1. Input
+    // 1. Input 
     const { id } = await params;
 
     // 2. Validate ID

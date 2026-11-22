@@ -15,7 +15,6 @@ const createItemSchema = z.object({
     .min(1, "Title is required.")
     .max(120, "Title is too long (maximum 120 characters)."),
   description: z.string().trim().optional(),
-  status: z.enum(["pending", "in_progress", "completed"]).default("pending"),
 });
 
 // GET /api/items?status=pending&page=1
