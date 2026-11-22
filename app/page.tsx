@@ -9,6 +9,7 @@ import ItemCard from "./components/ItemCard";
 import FilterTabs from "./components/FilterTabs";
 import ErrorBanner from "./components/ErrorBanner";
 import Pagination from "./components/Pagination";
+import EditItemModal from "./components/EditItemModal";
 
 function ItemsPageContent() {
   const router = useRouter();
@@ -22,6 +23,7 @@ function ItemsPageContent() {
   const [total, setTotal] = useState<number>(0);
   const [totalPages, setTotalPages] = useState<number>(1);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [editingItem, setEditingItem] = useState<Item | null>(null);
 
   const updateUrl = useCallback(
     (status: string, nextPage: number) => {
@@ -106,21 +108,34 @@ function ItemsPageContent() {
   }
 
   // 3. UPDATE (PATCH /api/items/:id)
-  async function handleStatusChange(id: string, status: Item["status"]) {
+  async function handleEdit(
+    id: string,
+    data: { title: string; description: string; status: Item["status"] },
+  ): Promise<{ success: boolean; error?: string }> {
     try {
       const res = await fetch(`/api/items/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify(data),
       });
 
-      if (!res.ok) {
-        throw new Error();
+      if (res.ok) {
+        setErrorMessage(null);
+        await fetchItems();
+        return { success: true };
       }
 
-      await fetchItems();
+      const errorBody = await res.json();
+      const message =
+        errorBody?.errors?.fieldErrors?.title?.[0] ||
+        errorBody?.error ||
+        "Failed to update task.";
+      return { success: false, error: message };
     } catch {
-      setErrorMessage("Failed to update task. Please try again.");
+      return {
+        success: false,
+        error: "Unable to reach the server. Please check your connection.",
+      };
     }
   }
 
@@ -179,7 +194,7 @@ function ItemsPageContent() {
                 <ItemCard
                   key={item.id}
                   item={item}
-                  onStatusChange={handleStatusChange}
+                  onEdit={setEditingItem}
                   onDelete={handleDelete}
                 />
               ))}
@@ -194,6 +209,14 @@ function ItemsPageContent() {
           />
         </div>
       </div>
+
+      {editingItem && (
+        <EditItemModal
+          item={editingItem}
+          onSave={handleEdit}
+          onClose={() => setEditingItem(null)}
+        />
+      )}
     </main>
   );
 }

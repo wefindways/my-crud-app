@@ -9,7 +9,11 @@ type Status = (typeof ALLOWABLE_STATUS)[number];
 const PAGE_SIZE = 10;
 
 const createItemSchema = z.object({
-  title: z.string().trim().min(1, "Title is required").max(120),
+  title: z
+    .string()
+    .trim()
+    .min(1, "Title is required.")
+    .max(120, "Title is too long (maximum 120 characters)."),
   description: z.string().trim().optional(),
   status: z.enum(["pending", "in_progress", "completed"]).default("pending"),
 });
@@ -78,6 +82,6 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },
-    );
+    )
   }
 }

@@ -1,15 +1,15 @@
-import { Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { Item } from "@/lib/db/schema";
 
 interface ItemCardProps {
   item: Item;
-  onStatusChange: (id: string, status: Item["status"]) => void;
+  onEdit: (item: Item) => void;
   onDelete: (id: string) => void;
 }
 
 export default function ItemCard({
   item,
-  onStatusChange,
+  onEdit,
   onDelete,
 }: ItemCardProps) {
   const isCompleted = item.status === "completed";
@@ -34,23 +34,13 @@ export default function ItemCard({
       </div>
 
       <div className="flex items-center gap-3 shrink-0">
-        <select
-          value={item.status}
-          onChange={(e) =>
-            onStatusChange(item.id, e.target.value as Item["status"])
-          }
-          className="border border-zinc-300 bg-transparent px-2 py-1 text-xs text-zinc-700 focus:border-zinc-900 focus:outline-none dark:border-zinc-700 dark:text-zinc-300 cursor-pointer"
+        <button
+          onClick={() => onEdit(item)}
+          aria-label="Edit task"
+          className="p-1 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 cursor-pointer"
         >
-          <option value="pending" className="dark:bg-zinc-900">
-            Pending
-          </option>
-          <option value="in_progress" className="dark:bg-zinc-900">
-            In Progress
-          </option>
-          <option value="completed" className="dark:bg-zinc-900">
-            Completed
-          </option>
-        </select>
+          <Pencil className="h-4 w-4" />
+        </button>
 
         <button
           onClick={() => onDelete(item.id)}
