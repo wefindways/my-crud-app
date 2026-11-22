@@ -1,5 +1,5 @@
 {
-  "id": "64afb12b-6f30-4d45-9fd0-7bff0812d3f0",
+  "id": "1585e9a4-f873-4702-93b0-86b786bedc14",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -35,14 +35,6 @@
           "notNull": true,
           "default": "'pending'"
         },
-        "priority": {
-          "name": "priority",
-          "type": "item_priority",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'medium'"
-        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -68,15 +60,6 @@
     }
   },
   "enums": {
-    "public.item_priority": {
-      "name": "item_priority",
-      "schema": "public",
-      "values": [
-        "low",
-        "medium",
-        "high"
-      ]
-    },
     "public.item_status": {
       "name": "item_status",
       "schema": "public",

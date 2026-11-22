@@ -12,6 +12,5 @@ export const items = pgTable('items', {
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
-// Infer TypeScript types directly from the schema!
+// Infer TypeScript type directly from the schema
 export type Item = typeof items.$inferSelect;
-export type NewItem = typeof items.$inferInsert;
