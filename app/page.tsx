@@ -1,69 +1,236 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { Suspense, useEffect, useState, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import type { Item } from "@/lib/db/schema";
+import { Loader2 } from "lucide-react";
+import ItemForm from "./components/ItemForm";
+import ItemCard from "./components/ItemCard";
+import FilterTabs from "./components/FilterTabs";
+import ErrorBanner from "./components/ErrorBanner";
+import Pagination from "./components/Pagination";
+import EditItemModal from "./components/EditItemModal";
+
+function ItemsPageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const statusFilter = searchParams.get("status") ?? "";
+  const page = Math.max(1, Number(searchParams.get("page")) || 1);
+
+  const [items, setItems] = useState<Item[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [total, setTotal] = useState<number>(0);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [editingItem, setEditingItem] = useState<Item | null>(null);
+
+  const updateUrl = useCallback(
+    (status: string, nextPage: number) => {
+      const params = new URLSearchParams();
+      if (status) params.set("status", status);
+      if (nextPage > 1) params.set("page", String(nextPage));
+      const query = params.toString();
+      router.push(query ? `/?${query}` : "/");
+    },
+    [router],
+  );
+
+  // 1. READ (GET /api/items?status=...&page=...)
+  const fetchItems = useCallback(async () => {
+    setLoading(true);
+    setErrorMessage(null);
+
+    try {
+      const params = new URLSearchParams();
+      if (statusFilter) params.set("status", statusFilter);
+      params.set("page", String(page));
+
+      const res = await fetch(`/api/items?${params.toString()}`);
+      if (!res.ok) {
+        throw new Error("Failed to load tasks. Please try again.");
+      }
+
+      const data: { items: Item[]; total: number; totalPages: number } =
+        await res.json();
+
+      // This page became empty (e.g. we deleted its last task) → go back one page.
+      if (data.items.length === 0 && page > 1) {
+        updateUrl(statusFilter, page - 1);
+        return;
+      }
+
+      setItems(data.items);
+      setTotal(data.total);
+      setTotalPages(data.totalPages);
+    } catch {
+      setErrorMessage("Unable to load tasks. Please check your connection.");
+    }
+    setLoading(false);
+  }, [statusFilter, page, updateUrl]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void fetchItems();
+  }, [fetchItems]);
+
+  // 2. CREATE (POST /api/items)
+  async function handleCreate(data: {
+    title: string;
+    description?: string;
+  }): Promise<{ success: boolean; error?: string }> {
+    try {
+      const res = await fetch("/api/items", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      if (res.ok) {
+        setErrorMessage(null);
+        if (page === 1) await fetchItems();
+        else updateUrl(statusFilter, 1);
+        return { success: true };
+      }
+
+      const errorBody = await res.json();
+      const message =
+        errorBody?.errors?.fieldErrors?.title?.[0] ||
+        errorBody?.error ||
+        "Failed to create task.";
+      return { success: false, error: message };
+    } catch {
+      return {
+        success: false,
+        error: "Unable to reach the server. Please check your connection.",
+      };
+    }
+  }
+
+  // 3. UPDATE (PATCH /api/items/:id)
+  async function handleEdit(
+    id: string,
+    data: { title: string; description: string; status: Item["status"] },
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      const res = await fetch(`/api/items/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      if (res.ok) {
+        setErrorMessage(null);
+        await fetchItems();
+        return { success: true };
+      }
+
+      const errorBody = await res.json();
+      const message =
+        errorBody?.errors?.fieldErrors?.title?.[0] ||
+        errorBody?.error ||
+        "Failed to update task.";
+      return { success: false, error: message };
+    } catch {
+      return {
+        success: false,
+        error: "Unable to reach the server. Please check your connection.",
+      };
+    }
+  }
+
+  // 4. DELETE (DELETE /api/items/:id)
+  async function handleDelete(id: string) {
+    try {
+      const res = await fetch(`/api/items/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        throw new Error();
+      }
+      await fetchItems();
+    } catch {
+      setErrorMessage("Failed to delete task. Please try again.");
+    }
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <main className="mx-auto max-w-4xl px-4 py-15 space-y-6">
+      {/* GLOBAL ERROR BANNER */}
+      {errorMessage && (
+        <ErrorBanner
+          message={errorMessage}
+          onRetry={() => fetchItems()}
+          onDismiss={() => setErrorMessage(null)}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
+      )}
+
+      <div className="grid gap-8 md:grid-cols-[280px_minmax(0,1fr)] items-start">
+        {/* LEFT COLUMN: CREATE FORM */}
+        <div className="md:sticky md:top-8">
+          <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 pb-2">
+            Task Tracker
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+
+          <ItemForm onCreate={handleCreate} />
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        {/* RIGHT COLUMN: TABS, LIST & PAGINATION */}
+        <div className="min-w-0 space-y-4">
+          <FilterTabs
+            activeFilter={statusFilter}
+            onSelectFilter={(filter) => updateUrl(filter, 1)}
+          />
+
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-5 w-5 animate-spin text-zinc-400" />
+            </div>
+          ) : items.length === 0 ? (
+            <p className="py-10 text-center text-sm text-zinc-500">
+              No tasks found.
+            </p>
+          ) : (
+            <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
+              {items.map((item) => (
+                <ItemCard
+                  key={item.id}
+                  item={item}
+                  onEdit={setEditingItem}
+                  onDelete={handleDelete}
+                />
+              ))}
+            </ul>
+          )}
+
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            total={total}
+            onPageChange={(nextPage) => updateUrl(statusFilter, nextPage)}
+          />
         </div>
-      </main>
-    </div>
+      </div>
+
+      {editingItem && (
+        <EditItemModal
+          item={editingItem}
+          onSave={handleEdit}
+          onClose={() => setEditingItem(null)}
+        />
+      )}
+    </main>
+  );
+}
+
+export default function ItemsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex justify-center p-8">
+          <Loader2 className="animate-spin text-neutral-400" />
+        </div>
+      }
+    >
+      <ItemsPageContent />
+    </Suspense>
   );
 }
